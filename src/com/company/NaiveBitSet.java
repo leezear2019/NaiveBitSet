@@ -68,21 +68,32 @@ public class NaiveBitSet {
         int b = wordOffset(s);
         // 先确定怎么偏移
         if (nbs.longSize == 1) {
-            // 即 nbs.bitsize =1
+            // 即 nbs.longSize =1
             if ((b + nbs.bitSize) < BITS_PER_WORD) {
                 // 如果偏移量和整个bitset长度相加之后仍小于64，直接做
                 // 取反码
                 // long rmask = (WORD_MASK << (nbs.bitSize - b)) | (WORD_MASK >>> (BITS_PER_WORD - b));
                 // 取掩码, 先左移取反再左移，移之后是：111...10..01...11这样的形式
-                long rMask = ~(~(WORD_MASK << nbs.bitSize) << b);
-                this.words[a] = this.words[a] & rMask | (nbs.words[0] << b);
+//                long rMask = (~(~(WORD_MASK << nbs.bitSize) << b));
+                this.words[a] = this.words[a] & (~(~(WORD_MASK << nbs.bitSize) << b)) | (nbs.words[0] << b);
             } else {
                 int offset1 = nbs.bitSize + b - BITS_PER_WORD;
 //                long rMask =
-                int offset2 = BITS_PER_WORD - offset1;
+//                int offset2 = BITS_PER_WORD - offset1;
                 // 如果偏移量和整个bitset长度相加之后仍大于等于64，则需要用到this.words的下一个
-                this.words[a] = (~(WORD_MASK << b)) & this.words[a] | (nbs.words[0] << b);
-                this.words[a + 1] = this.words[a + 1] & (WORD_MASK << offset1) | nbs.words[0] >> offset1;
+                this.words[a] = ((~(WORD_MASK << b)) & this.words[a]) | (nbs.words[0] << b);
+                this.words[a + 1] = (this.words[a + 1] & (WORD_MASK << offset1)) | (nbs.words[0] >> offset1);
+            }
+        } else {
+            int endIndex = s + nbs.bitSize;
+            int c = wordIndex(endIndex);
+            int d = wordOffset(endIndex);
+            int offset1 = nbs.bitSize + s - BITS_PER_WORD;
+            // 先不计算最后一个影响位
+            for (int i = 0, len = c - 1; i < len; ++i) {
+                int j = a+i;
+                this.words[j]=((~(WORD_MASK << s)) & this.words[j]) | (nbs.words[i] << s);
+                this.words[j + 1] = (this.words[j+ 1] & (WORD_MASK << offset1)) | (nbs.words[i] >> offset1);
             }
         }
 //        for (int i = 0, len = s.longSize; i < len; ++i) {
