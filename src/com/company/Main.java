@@ -1,6 +1,12 @@
 package com.company;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
+import javax.swing.*;
 import java.util.BitSet;
+import java.util.Random;
 
 public class Main {
 
@@ -43,12 +49,26 @@ public class Main {
         NaiveBitSet b;
         int numBit = 100;
         b = new NaiveBitSet(numBit);
+        TIntArrayList n = new TIntArrayList();
 
         for (int i = 0; i < numBit; i += 3) {
             System.out.println(i);
             b.set(i);
+            n.add(i);
         }
 
+
         System.out.println(b);
+        System.out.println(n);
+        n.shuffle(new Random(25));
+        System.out.println(n);
+
+        TIntSet s = new TIntHashSet(n);
+
+        n.sort();
+        System.out.println(n);
+
+        System.out.println(s);
+
     }
 }
