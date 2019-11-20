@@ -34,36 +34,36 @@ public class NaiveBitSet {
         return bitIndex & MOD_MASK_INT;
     }
 
-    int longSize() {
+    public int longSize() {
         return longSize;
     }
 
-    int bitSize() {
+    public int bitSize() {
         return bitSize;
     }
 
-    void flip() {
+    public void flip() {
         for (int i = 0; i < longSize; ++i) {
             words[i] = ~words[i];
         }
         words[longSize - 1] &= lastMask;
     }
 
-    void set(int bitIndex) {
+    public void set(int bitIndex) {
         this.words[wordIndex(bitIndex)] |= 1L << bitIndex;
     }
 
-    void set(NaiveBitSet s) {
+    public void set(NaiveBitSet s) {
         for (int i = 0; i < longSize; ++i) {
             this.words[i] = s.words[i];
         }
     }
 
-    void set(int startIndex, NaiveBitSet b) {
+    public void set(int startIndex, NaiveBitSet b) {
 //        for(int i = wordIndex(startIndex);)
     }
 
-    void naiveSet(int s, NaiveBitSet nbs) {
+    public void naiveSet(int s, NaiveBitSet nbs) {
         int a = wordIndex(s);
         int b = wordOffset(s);
         // 先确定怎么偏移
@@ -77,23 +77,22 @@ public class NaiveBitSet {
 //                long rMask = (~(~(WORD_MASK << nbs.bitSize) << b));
                 this.words[a] = this.words[a] & (~(~(WORD_MASK << nbs.bitSize) << b)) | (nbs.words[0] << b);
             } else {
-                int offset1 = nbs.bitSize + b - BITS_PER_WORD;
-//                long rMask =
-//                int offset2 = BITS_PER_WORD - offset1;
+                int offset = (BITS_PER_WORD << 1) - nbs.bitSize - b;
                 // 如果偏移量和整个bitset长度相加之后仍大于等于64，则需要用到this.words的下一个
                 this.words[a] = ((~(WORD_MASK << b)) & this.words[a]) | (nbs.words[0] << b);
-                this.words[a + 1] = (this.words[a + 1] & (WORD_MASK << offset1)) | (nbs.words[0] >> offset1);
+                this.words[a + 1] = (this.words[a + 1] & (~(WORD_MASK >> offset))) | (nbs.words[0] >> offset);
             }
         } else {
             int endIndex = s + nbs.bitSize;
             int c = wordIndex(endIndex);
             int d = wordOffset(endIndex);
-            int offset1 = nbs.bitSize + s - BITS_PER_WORD;
+//            int offset1 = nbs.bitSize + s - BITS_PER_WORD;
+            int offset = (BITS_PER_WORD << 1) - nbs.bitSize - b;
             // 先不计算最后一个影响位
             for (int i = 0, len = c - 1; i < len; ++i) {
                 int j = a + i;
                 this.words[j] = ((~(WORD_MASK << s)) & this.words[j]) | (nbs.words[i] << s);
-                this.words[j + 1] = (this.words[j + 1] & (WORD_MASK << offset1)) | (nbs.words[i] >> offset1);
+                this.words[j + 1] = (this.words[j + 1] & (~(WORD_MASK >> offset))) | (nbs.words[i] >> offset);
             }
         }
 //        for (int i = 0, len = s.longSize; i < len; ++i) {
@@ -112,46 +111,45 @@ public class NaiveBitSet {
 //        }
     }
 
-    void naiveAnd(int s, NaiveBitSet nbs) {
-        int a =  (s);
+    public void naiveAnd(int s, NaiveBitSet nbs) {
+        int a = wordIndex(s);
         int b = wordOffset(s);
         // 先确定怎么偏移
         if (nbs.longSize == 1) {
             // 即 nbs.longSize =1
             if ((b + nbs.bitSize) < BITS_PER_WORD) {
                 // 如果偏移量和整个bitset长度相加之后仍小于64，直接做
-                // 取反码
-                // long rmask = (WORD_MASK << (nbs.bitSize - b)) | (WORD_MASK >>> (BITS_PER_WORD - b));
-                // 取掩码, 先左移取反再左移，移之后是：111...10..01...11这样的形式
-//                long rMask = (~(~(WORD_MASK << nbs.bitSize) << b));
-                this.words[a] = this.words[a] & (~(~(WORD_MASK << nbs.bitSize) << b)) | (nbs.words[0] << b);
+                // 掩码，先让开nbs的长度，装入nbs，再移动b的长度，装入填充
+                this.words[a] &= ((WORD_MASK << nbs.bitSize) | nbs.words[0]) << b | (~(WORD_MASK << b));
             } else {
-                int offset1 = nbs.bitSize + b - BITS_PER_WORD;
-//                long rMask =
+//                int offset1 = nbs.bitSize + b - BITS_PER_WORD;
 //                int offset2 = BITS_PER_WORD - offset1;
+                int offset = (BITS_PER_WORD << 1) - nbs.bitSize - b;
                 // 如果偏移量和整个bitset长度相加之后仍大于等于64，则需要用到this.words的下一个
-                this.words[a] = ((~(WORD_MASK << b)) & this.words[a]) | (nbs.words[0] << b);
-                this.words[a + 1] = (this.words[a + 1] & (WORD_MASK << offset1)) | (nbs.words[0] >> offset1);
+                this.words[a] &= (~(WORD_MASK << b)) | (nbs.words[0] << b);
+//                this.words[a + 1] &= (WORD_MASK << offset1) | (nbs.words[0] >> offset2);
+                this.words[a + 1] &= (~(WORD_MASK >> offset)) | (nbs.words[0] >> offset);
             }
         } else {
             int endIndex = s + nbs.bitSize;
             int c = wordIndex(endIndex);
             int d = wordOffset(endIndex);
-            int offset1 = nbs.bitSize + s - BITS_PER_WORD;
+//            int offset1 = nbs.bitSize + s - BITS_PER_WORD;
+            int offset = (BITS_PER_WORD << 1) - nbs.bitSize - b;
             // 先不计算最后一个影响位
             for (int i = 0, len = c - 1; i < len; ++i) {
                 int j = a + i;
-                this.words[j] = ((~(WORD_MASK << s)) & this.words[j]) | (nbs.words[i] << s);
-                this.words[j + 1] = (this.words[j + 1] & (WORD_MASK << offset1)) | (nbs.words[i] >> offset1);
+                this.words[j] &= (~(WORD_MASK << s)) | (nbs.words[i] << s);
+                this.words[j + 1] &= (~(WORD_MASK >> offset)) | (nbs.words[i] >> offset);
             }
         }
     }
 
-    void reset(int bitIndex) {
+    public void reset(int bitIndex) {
         this.words[wordIndex(bitIndex)] &= ~(1L << bitIndex);
     }
 
-    boolean isEmpty() {
+    public boolean isEmpty() {
         for (int i = 0; i < longSize; ++i) {
             if (this.words[i] != 0L) {
                 return false;
@@ -160,25 +158,25 @@ public class NaiveBitSet {
         return true;
     }
 
-    boolean check(int bitIndex) {
+    public boolean check(int bitIndex) {
         int wordIndex = wordIndex(bitIndex);
         return wordIndex < longSize && (this.words[wordIndex] & 1L << bitIndex) != 0L;
 
     }
 
-    void and(NaiveBitSet s) {
+    public void and(NaiveBitSet s) {
         for (int i = 0; i < longSize; ++i) {
             this.words[i] &= s.words[i];
         }
     }
 
-    void or(NaiveBitSet s) {
+    public void or(NaiveBitSet s) {
         for (int i = 0; i < longSize; ++i) {
             this.words[i] |= s.words[i];
         }
     }
 
-    int nextOneBit(int fromIndex) {
+    public int nextOneBit(int fromIndex) {
         if (fromIndex < 0) {
             throw new IndexOutOfBoundsException("fromIndex < 0: " + fromIndex);
         } else {
@@ -199,14 +197,71 @@ public class NaiveBitSet {
         }
     }
 
+    public int nextZeroBit(int fromIndex) {
+        // Neither spec nor implementation handle bitsets of maximal length.
+        // See 4816253.
+        if (fromIndex < 0)
+            throw new IndexOutOfBoundsException("fromIndex < 0: " + fromIndex);
+
+
+        int u = wordIndex(fromIndex);
+        if (u >= longSize)
+            return fromIndex;
+
+        long word = ~words[u] & (WORD_MASK << fromIndex);
+
+        while (true) {
+            if (word != 0)
+                return (u * BITS_PER_WORD) + Long.numberOfTrailingZeros(word);
+            if (++u == longSize)
+                return longSize * BITS_PER_WORD;
+            word = ~words[u];
+        }
+    }
+
+    @Override
+    public String toString() {
+
+        final int MAX_INITIAL_CAPACITY = Integer.MAX_VALUE - 8;
+        int numBits = longSize * BITS_PER_WORD;
+        // Avoid overflow in the case of a humongous numBits
+        int initialCapacity = (numBits <= (MAX_INITIAL_CAPACITY - 2) / 6) ?
+                6 * numBits + 2 : MAX_INITIAL_CAPACITY;
+        StringBuilder b = new StringBuilder(initialCapacity);
+        b.append('{');
+
+        int i = nextOneBit(0);
+        if (i != -1) {
+            b.append(i);
+            while (true) {
+                if (++i < 0) break;
+                if ((i = nextOneBit(i)) < 0) break;
+                int endOfRun = nextZeroBit(i);
+                do {
+                    b.append(", ").append(i);
+                }
+                while (++i != endOfRun);
+            }
+        }
+
+        b.append('}');
+        return b.toString();
+    }
+
     // 从某个启始位置与并检查计算结果
-    public static boolean naiveAndEmpty(BitSet d, BitSet s, int startBitIndex) {
+    public static boolean naiveAndEmpty(int s, BitSet a, BitSet b) {
         return false;
     }
 
     public void and(NaiveBitSet a, NaiveBitSet b) {
         for (int i = 0; i < this.longSize; ++i) {
             this.words[i] &= (a.words[i] & b.words[i]);
+        }
+    }
+
+    public void and(NaiveBitSet a, NaiveBitSet b, NaiveBitSet c, NaiveBitSet d) {
+        for (int i = 0, len = longSize; i < len; ++i) {
+            this.words[i] = a.words[i] & b.words[i] & c.words[i] & d.words[i];
         }
     }
 
