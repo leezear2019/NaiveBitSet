@@ -5,8 +5,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
 import javax.swing.*;
-import java.util.BitSet;
-import java.util.Random;
+import java.util.*;
 
 public class Main {
 
@@ -69,6 +68,14 @@ public class Main {
         System.out.println(n);
 
         System.out.println(s);
+
+
+        Set<Integer> ss = new TreeSet<>();
+
+        ss.add(1);
+        ss.add(1);
+
+        System.out.println(ss);
 
     }
 }

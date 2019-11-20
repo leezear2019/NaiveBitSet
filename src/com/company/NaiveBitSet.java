@@ -286,6 +286,41 @@ public class NaiveBitSet {
         return true;
     }
 
+    public void or(NaiveSparseBitSet s) {
+        //以较小的s为区间
+        for (int i = 0, len = s.longSize; i < len; ++i) {
+            int offset = s.index[i];
+            this.words[offset] |= s.words[i];
+        }
+    }
+
+    // 先或再检查为空
+    public boolean orCheckEmpty(NaiveSparseBitSet s) {
+        //以较小的s为区间
+        boolean res = false;
+        for (int i = 0, len = s.longSize; i < len; ++i) {
+            int offset = s.index[i];
+            this.words[offset] |= s.words[i];
+            if (this.words[offset] != 0L) {
+                res = true;
+            }
+        }
+        return res;
+    }
+
+    // 只尝试检查或的结果不改值
+    public boolean orTestEmpty(NaiveSparseBitSet s) {
+        //以较小的s为区间
+        boolean res = false;
+        for (int i = 0, len = s.longSize; i < len; ++i) {
+            int offset = s.index[i];
+            if ((this.words[offset] | s.words[i]) != 0L) {
+                res = true;
+            }
+        }
+        return res;
+    }
+
     public final static boolean EmptyAnd(NaiveBitSet a, NaiveBitSet b, NaiveBitSet c, NaiveBitSet d) {
         for (int i = 0; i < a.longSize; ++i) {
             if ((a.words[i] & b.words[i] & c.words[i] & d.words[i]) != 0L) {
